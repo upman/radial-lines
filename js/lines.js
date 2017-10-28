@@ -3,7 +3,7 @@ var geometry, material, mesh;
 
 var container = document.getElementById('container');
 var linesControl = document.getElementById('lines-control');
-var three = THREE;
+var numLines = 20;
 
 Raphael.el.is = function (type) { return this.type == (''+type).toLowerCase(); };
 Raphael.el.x = function (val) { return this.is('circle') ? this.attr('cx', val) : this.attr('x', val); };
@@ -106,6 +106,7 @@ function init() {
 	renderer.setSize( container.clientHeight, container.clientHeight );
 	container.appendChild( renderer.domElement );
 
+    initializeSceneObjects();
 
     var isDragging = false;
     var previousMousePosition = {
@@ -124,8 +125,8 @@ function init() {
 
         if(isDragging) {
 
-            var deltaRotationQuaternion = new three.Quaternion()
-                .setFromEuler(new three.Euler(
+            var deltaRotationQuaternion = new THREE.Quaternion()
+                .setFromEuler(new THREE.Euler(
                     toRadians(deltaMove.y * 1),
                     toRadians(deltaMove.x * 1),
                     0,
@@ -146,27 +147,13 @@ function init() {
 }
 
 function animate() {
-
 	requestAnimationFrame( animate );
-    circleCoordinates = [];
-    var xScale = linesControl.clientWidth / container.clientWidth;
-    var yScale = -linesControl.clientHeight / container.clientHeight;
-    var circleCoordinates = [];
-    for(var i = 0; i < circles.length; i++) {
-        var coordinates = {
-            x: (circles[i].attr('cx') - circles[0].attr('cx')) * xScale,
-            y: (circles[i].attr('cy') - circles[0].attr('cy')) * yScale
-        };
-        circleCoordinates.push(coordinates);
+    updateSceneObjects();
+	renderer.render( scene, camera );
+}
 
-    }
-
-    var numLines = 20;
-    while(scene.children.length > 0){
-        var child = scene.children[0];
-        scene.remove(scene.children[0]);
-        child.dispose();
-    }
+function initializeSceneObjects() {
+    var circleCoordinates = getCircleCoordinates();
     for(var i = 0; i < numLines; i++) {
         var angle = i * toRadians(360 / numLines);
         var quaternion = new THREE.Quaternion();
@@ -188,7 +175,56 @@ function animate() {
         scene.add( line );
         scene.add( mirrorLine );
     }
-	renderer.render( scene, camera );
+}
+
+function destroySceneObjects() {
+    while(scene.children[0]) {
+        var object = scene.children[0];
+        scene.remove(scene.children[0]);
+        object.dispose();
+    }
+}
+
+function updateSceneObjects() {
+    var i = 0;
+    var circleCoordinates = getCircleCoordinates();
+    for( var i = 0; i < scene.children.length; i += 2 ) {
+        var angle = i * toRadians(360 / numLines);
+        var quaternion = new THREE.Quaternion();
+        quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), angle );
+        for(var j = 0; j < circleCoordinates.length; j++) {
+            var vector = new THREE.Vector3(circleCoordinates[j].x, circleCoordinates[j].y, 0);
+            var mirrorVector = new THREE.Vector3(circleCoordinates[j].x, -circleCoordinates[j].y, 0);
+            vector.applyQuaternion(quaternion);
+            mirrorVector.applyQuaternion(quaternion);
+            var distance = vector.distanceTo(scene.children[i].geometry.vertices[j]);
+            if(distance !== 0) {
+                scene.children[i].geometry.vertices[j].x = vector.x;
+                scene.children[i + 1].geometry.vertices[j].x = mirrorVector.x;
+                scene.children[i].geometry.vertices[j].y = vector.y;
+                scene.children[i + 1].geometry.vertices[j].y = mirrorVector.y;
+                scene.children[i].geometry.vertices[j].z = vector.z;
+                scene.children[i + 1].geometry.vertices[j].z = mirrorVector.z;
+                scene.children[i].geometry.verticesNeedUpdate = true;
+                scene.children[i + 1].geometry.verticesNeedUpdate = true;
+            }
+        }
+    }
+}
+
+function getCircleCoordinates() {
+    var xScale = linesControl.clientWidth / container.clientWidth;
+    var yScale = -linesControl.clientHeight / container.clientHeight;
+    var circleCoordinates = [];
+    for(var i = 0; i < circles.length; i++) {
+        var coordinates = {
+            x: (circles[i].attr('cx') - circles[0].attr('cx')) * xScale,
+            y: (circles[i].attr('cy') - circles[0].attr('cy')) * yScale
+        };
+        circleCoordinates.push(coordinates);
+    }
+
+    return circleCoordinates;
 }
 
 function toRadians(angle) {
