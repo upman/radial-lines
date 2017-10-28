@@ -3,7 +3,23 @@ var geometry, material, mesh;
 
 var container = document.getElementById('container');
 var linesControl = document.getElementById('lines-control');
+var numLinesControl = document.getElementById('num-lines-control');
 var numLines = 20;
+numLinesControl.defaultValue = numLines;
+numLinesControl.addEventListener('input', function() {
+    numLines = Number(numLinesControl.value);
+    cancelAnimationFrame(animateId);
+    if(scene.children[0]) {
+        var quaternion = scene.children[0].quaternion.clone();
+    }
+    destroySceneObjects();
+    initializeSceneObjects();
+    if(scene.children[0]) {
+        scene.children[0].applyQuaternion(quaternion);
+    }
+    animateId = requestAnimationFrame(animate);
+})
+
 
 Raphael.el.is = function (type) { return this.type == (''+type).toLowerCase(); };
 Raphael.el.x = function (val) { return this.is('circle') ? this.attr('cx', val) : this.attr('x', val); };
@@ -96,7 +112,7 @@ animate();
 
 function init() {
 
-	camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 1, 500 );
+	camera = new THREE.PerspectiveCamera( 55, container.clientWidth / container.clientHeight, 1, 800 );
     camera.position.set(0, 0, 100);
     camera.lookAt(new THREE.Vector3(0, 0, 0));
 
@@ -108,7 +124,7 @@ function init() {
 
     initializeSceneObjects();
 
-    var isDragging = false;
+    isDragging = false;
     var previousMousePosition = {
         x: 0,
         y: 0
@@ -132,8 +148,9 @@ function init() {
                     0,
                     'XYZ'
                 ));
-
-            line.quaternion.multiplyQuaternions(deltaRotationQuaternion, line.quaternion);
+            if(scene.children[0]) {
+                scene.children[0].quaternion.multiply(deltaRotationQuaternion);
+            }
         }
 
         previousMousePosition = {
@@ -147,15 +164,16 @@ function init() {
 }
 
 function animate() {
-	requestAnimationFrame( animate );
+	animateId = requestAnimationFrame( animate );
     updateSceneObjects();
 	renderer.render( scene, camera );
 }
 
 function initializeSceneObjects() {
     var circleCoordinates = getCircleCoordinates();
+    var group = new THREE.Group();
     for(var i = 0; i < numLines; i++) {
-        var angle = i * toRadians(360 / numLines);
+        var angle = i * toRadians(360 / (numLines) );
         var quaternion = new THREE.Quaternion();
         quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), angle );
         var material = new THREE.LineBasicMaterial({ color: 'steelblue' });
@@ -172,24 +190,26 @@ function initializeSceneObjects() {
         }
         line = new THREE.Line(geometry, material);
         mirrorLine = new THREE.Line(mirrorGeometry, material);
-        scene.add( line );
-        scene.add( mirrorLine );
+        group.add( line );
+        group.add( mirrorLine );
     }
+    scene.add(group);
 }
 
 function destroySceneObjects() {
     while(scene.children[0]) {
         var object = scene.children[0];
         scene.remove(scene.children[0]);
-        object.dispose();
+        // object.dispose();
     }
 }
 
 function updateSceneObjects() {
     var i = 0;
     var circleCoordinates = getCircleCoordinates();
-    for( var i = 0; i < scene.children.length; i += 2 ) {
-        var angle = i * toRadians(360 / numLines);
+    var group = scene.children[0];
+    for( var i = 0; i < group.children.length; i += 2 ) {
+        var angle = i * toRadians(360 / (numLines) );
         var quaternion = new THREE.Quaternion();
         quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), angle );
         for(var j = 0; j < circleCoordinates.length; j++) {
@@ -197,16 +217,16 @@ function updateSceneObjects() {
             var mirrorVector = new THREE.Vector3(circleCoordinates[j].x, -circleCoordinates[j].y, 0);
             vector.applyQuaternion(quaternion);
             mirrorVector.applyQuaternion(quaternion);
-            var distance = vector.distanceTo(scene.children[i].geometry.vertices[j]);
+            var distance = vector.distanceTo(group.children[i].geometry.vertices[j]);
             if(distance !== 0) {
-                scene.children[i].geometry.vertices[j].x = vector.x;
-                scene.children[i + 1].geometry.vertices[j].x = mirrorVector.x;
-                scene.children[i].geometry.vertices[j].y = vector.y;
-                scene.children[i + 1].geometry.vertices[j].y = mirrorVector.y;
-                scene.children[i].geometry.vertices[j].z = vector.z;
-                scene.children[i + 1].geometry.vertices[j].z = mirrorVector.z;
-                scene.children[i].geometry.verticesNeedUpdate = true;
-                scene.children[i + 1].geometry.verticesNeedUpdate = true;
+                group.children[i].geometry.vertices[j].x = vector.x;
+                group.children[i + 1].geometry.vertices[j].x = mirrorVector.x;
+                group.children[i].geometry.vertices[j].y = vector.y;
+                group.children[i + 1].geometry.vertices[j].y = mirrorVector.y;
+                group.children[i].geometry.vertices[j].z = vector.z;
+                group.children[i + 1].geometry.vertices[j].z = mirrorVector.z;
+                group.children[i].geometry.verticesNeedUpdate = true;
+                group.children[i + 1].geometry.verticesNeedUpdate = true;
             }
         }
     }
