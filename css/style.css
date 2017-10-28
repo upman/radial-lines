@@ -1,0 +1,30 @@
+body {
+	background-color: black;
+}
+
+html, body {
+	height: 100%;
+	width: 100%;
+	margin: 0px;
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+#container {
+	height: 100%;
+	width: 75vw;
+}
+
+#panel {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: 25vw;
+	background-color: white;
+	padding: 10px 10px 10px 10px;
+}
+
+#line-control {
+	height: 50vh;
+	width: 100%;
+}
