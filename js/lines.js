@@ -1,11 +1,15 @@
 var camera, scene, renderer;
 var geometry, material, mesh;
 
+var circlesRadius = 10;
 var container = document.getElementById('container');
 var linesControl = document.getElementById('lines-control');
 var numLinesControl = document.getElementById('num-lines-control');
+var numPointsControl = document.getElementById('num-points-control');
 var numLines = 20;
+var numPoints = 4;
 numLinesControl.defaultValue = numLines;
+numPointsControl.defaultValue = numPoints;
 numLinesControl.addEventListener('input', function() {
     numLines = Number(numLinesControl.value);
     cancelAnimationFrame(animateId);
@@ -18,7 +22,23 @@ numLinesControl.addEventListener('input', function() {
         scene.children[0].applyQuaternion(quaternion);
     }
     animateId = requestAnimationFrame(animate);
-})
+});
+
+numPointsControl.addEventListener('input', function() {
+    numPoints = Number(numPointsControl.value);
+    cancelAnimationFrame(animateId);
+    if(scene.children[0]) {
+        var quaternion = scene.children[0].quaternion.clone();
+    }
+    destroySceneObjects();
+    initControlCircles();
+    initializeSceneObjects();
+    if(scene.children[0]) {
+        scene.children[0].applyQuaternion(quaternion);
+    }
+    animateId = requestAnimationFrame(animate);
+});
+
 
 
 Raphael.el.is = function (type) { return this.type == (''+type).toLowerCase(); };
@@ -79,34 +99,37 @@ Raphael.st.draggable = function(options) {
 };
 
 var paper = new Raphael('lines-control', linesControl.clientWidth, linesControl.clientHeight);
-var circlesRadius = 10;
-var circles = [
-    paper.circle(150, 48, circlesRadius),
-    paper.circle(200, 48, circlesRadius),
-    paper.circle(250, 48, circlesRadius),
-    paper.circle(300, 48, circlesRadius)
-];
-for( var i = 0; i < circles.length; i++) {
-    circles[i].attr({fill: 'lightblue', opacity:0.4})
-    circles[i].draggable({margin: '10px'});
-    if(i + 1 < circles.length) {
-        var pathStart = {
-            x: circles[i].attr('cx'),
-            y: circles[i].attr('cy')
-        };
-        var pathEnd = {
-            x: circles[i + 1].attr('cx'),
-            y: circles[i + 1].attr('cy')
-        };
-        var path = paper.path([ 'M', pathStart.x, pathStart.y, 'L', pathEnd.x, pathEnd.y ]);
-        path.pathStart = pathStart;
-        path.pathEnd = pathEnd;
-        circles[i].pathStartsHere = path;
-        circles[i + 1].pathEndsHere = path;
+
+function initControlCircles() {
+    var xStart = 40;
+    var xIncrement = 350 / numPoints;
+    paper.clear();
+    circles = [];
+    for(i = 0; i < numPoints; i ++) {
+        circles.push(paper.circle(xStart + xIncrement * i, 200, circlesRadius));
+    }
+    for( var i = 0; i < circles.length; i++) {
+        circles[i].attr({fill: 'lightblue', opacity:0.4})
+        circles[i].draggable({margin: '10px'});
+        if(i + 1 < circles.length) {
+            var pathStart = {
+                x: circles[i].attr('cx'),
+                y: circles[i].attr('cy')
+            };
+            var pathEnd = {
+                x: circles[i + 1].attr('cx'),
+                y: circles[i + 1].attr('cy')
+            };
+            var path = paper.path([ 'M', pathStart.x, pathStart.y, 'L', pathEnd.x, pathEnd.y ]);
+            path.pathStart = pathStart;
+            path.pathEnd = pathEnd;
+            circles[i].pathStartsHere = path;
+            circles[i + 1].pathEndsHere = path;
+        }
     }
 }
 
-
+initControlCircles();
 init();
 animate();
 
@@ -233,8 +256,9 @@ function updateSceneObjects() {
 }
 
 function getCircleCoordinates() {
-    var xScale = linesControl.clientWidth / container.clientWidth;
-    var yScale = -linesControl.clientHeight / container.clientHeight;
+    var canvas = document.querySelector('#container canvas');
+    var xScale = linesControl.clientWidth / (canvas.clientWidth / 0.4);
+    var yScale = -linesControl.clientHeight / (canvas.clientHeight / 0.4);
     var circleCoordinates = [];
     for(var i = 0; i < circles.length; i++) {
         var coordinates = {

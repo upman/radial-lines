@@ -29,3 +29,12 @@ html, body {
 	height: 50vh;
 	width: 100%;
 }
+
+#num-lines-control, #num-points-control {
+	width: 80%;
+	margin: 50px auto;
+}
+
+#control {
+	text-align: center;
+}
