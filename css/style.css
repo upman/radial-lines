@@ -38,3 +38,8 @@ html, body {
 #control {
 	text-align: center;
 }
+
+#credits {
+	position: fixed;
+	bottom: 0px;
+}
