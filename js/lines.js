@@ -101,12 +101,12 @@ Raphael.st.draggable = function(options) {
 var paper = new Raphael('lines-control', linesControl.clientWidth, linesControl.clientHeight);
 
 function initControlCircles() {
-    var xStart = 40;
-    var xIncrement = 350 / numPoints;
+    var xStart = linesControl.clientWidth / 20;
+    var xIncrement = linesControl.clientWidth / (numPoints + 3);
     paper.clear();
     circles = [];
     for(i = 0; i < numPoints; i ++) {
-        circles.push(paper.circle(xStart + xIncrement * i, 200, circlesRadius));
+        circles.push(paper.circle(xStart + xIncrement * i, linesControl.clientHeight / 2, circlesRadius));
     }
     for( var i = 0; i < circles.length; i++) {
         circles[i].attr({fill: 'lightblue', opacity:0.4})
@@ -199,7 +199,7 @@ function initializeSceneObjects() {
         var angle = i * toRadians(360 / (numLines) );
         var quaternion = new THREE.Quaternion();
         quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), angle );
-        var material = new THREE.LineBasicMaterial({ color: 'steelblue' });
+        var material = new THREE.LineBasicMaterial({ color: 'steelblue', linewidth: 3 });
         material.lineWidth = 10;
         var geometry = new THREE.Geometry();
         var mirrorGeometry = new THREE.Geometry();
@@ -257,8 +257,9 @@ function updateSceneObjects() {
 
 function getCircleCoordinates() {
     var canvas = document.querySelector('#container canvas');
-    var xScale = linesControl.clientWidth / (canvas.clientWidth / 0.4);
-    var yScale = -linesControl.clientHeight / (canvas.clientHeight / 0.4);
+    var scale = Math.min(canvas.clientWidth , canvas.clientHeight);
+    var xScale = linesControl.clientWidth / (scale / 0.4);
+    var yScale = -linesControl.clientHeight / (scale / 0.4);
     var circleCoordinates = [];
     for(var i = 0; i < circles.length; i++) {
         var coordinates = {
